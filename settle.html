@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settle — a calendar that keeps up</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#EEF1F6;
+    --ink:#1B2430;
+    --sub:#5B6472;
+    --faint:#98A1AE;
+    --line:#D6DBE4;
+    --line-soft:#E6E9F0;
+    --card:#FFFFFF;
+    --today-wash:#FFF8EA;
+    --accent:#3D5A80;
+    --accent-l:#E4EBF3;
+    --accent-dark:#26415F;
+    --now-line:#D9483F;
+
+    --accent1:#3D5A80; --accent1-l:#E4EBF3;
+    --accent2:#5C8A63; --accent2-l:#E7EFE6;
+    --accent3:#C77B27; --accent3-l:#F6EADA;
+    --accent4:#7C6992; --accent4-l:#ECE8F1;
+    --accent5:#B2555F; --accent5-l:#F4E1E2;
+    --accent6:#3E8E8E; --accent6-l:#E1EFEF;
+
+    --shadow-card:0 1px 2px rgba(27,36,48,0.04), 0 8px 24px rgba(27,36,48,0.06);
+    --shadow-pop:0 6px 20px rgba(27,36,48,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:36px 32px 70px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:16px;
+    margin-bottom:28px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .mark{
+    width:38px;height:38px;
+    border-radius:11px;
+    background:var(--accent);
+    position:relative;
+    flex:none;
+  }
+  .brand .mark::before, .brand .mark::after{
+    content:'';
+    position:absolute;
+    background:var(--card);
+    border-radius:2px;
+  }
+  .brand .mark::before{ top:9px; left:7px; width:24px; height:3px; opacity:.9;}
+  .brand .mark::after{ top:16px; left:7px; width:14px; height:3px; opacity:.6;}
+  .brand h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:26px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:-0.02em;
+  }
+  .brand p{
+    margin:2px 0 0;
+    color:var(--sub);
+    font-size:13.5px;
+  }
+  .weeknav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--card);
+    border:1px solid var(--line-soft);
+    border-radius:12px;
+    padding:5px;
+  }
+  .weeknav button{
+    background:transparent;
+    border:none;
+    border-radius:8px;
+    width:32px;height:32px;
+    font-size:16px;
+    cursor:pointer;
+    color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .weeknav button:hover{background:var(--bg);}
+  #todayBtn{width:auto;padding:0 14px;font-family:'Inter';font-size:13px;font-weight:600;color:var(--accent-dark);}
+  #weekLabel{
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--ink);
+    min-width:132px;
+    text-align:center;
+    font-family:'Space Grotesk';
+  }
+
+  .composer{
+    background:var(--card);
+    border:1px solid var(--line-soft);
+    border-radius:16px;
+    padding:18px 20px 16px;
+    margin-bottom:22px;
+    box-shadow:var(--shadow-card);
+  }
+  .composer-top{
+    display:flex;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  #newActivity{
+    flex:1;
+    height:44px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--bg);
+    padding:0 16px;
+    font-size:15px;
+    font-family:'Inter';
+    color:var(--ink);
+    outline:none;
+    transition:border-color .12s, background .12s;
+  }
+  #newActivity:focus{border-color:var(--accent);background:var(--card);}
+  #newActivity::placeholder{color:var(--faint);}
+
+  #addBtn{
+    height:44px;
+    padding:0 22px;
+    border-radius:10px;
+    border:none;
+    background:var(--accent);
+    color:#fff;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter';
+    flex:none;
+    transition:background .12s, transform .08s;
+  }
+  #addBtn:hover{background:var(--accent-dark);}
+  #addBtn:active{transform:scale(0.97);}
+
+  .composer-row{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+
+  .segmented{
+    display:flex;
+    background:var(--bg);
+    border-radius:9px;
+    padding:3px;
+    gap:2px;
+    flex:none;
+  }
+  .segmented button{
+    border:none;
+    background:transparent;
+    padding:7px 13px;
+    font-size:12.5px;
+    font-weight:600;
+    font-family:'Inter';
+    color:var(--sub);
+    border-radius:7px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .segmented button.active{
+    background:var(--card);
+    color:var(--ink);
+    box-shadow:0 1px 2px rgba(27,36,48,0.08);
+  }
+
+  .composer-field-group{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #newDate, #newHourStart, #newHourEnd, #repeatUntil{
+    height:38px;
+    border-radius:9px;
+    border:1px solid var(--line);
+    background:var(--bg);
+    padding:0 12px;
+    font-size:13.5px;
+    font-family:'Inter';
+    color:var(--ink);
+    outline:none;
+    cursor:pointer;
+  }
+  #newDate:focus, #newHourStart:focus, #newHourEnd:focus, #repeatUntil:focus{border-color:var(--accent);}
+  #newDate:invalid, #repeatUntil:invalid{color:var(--faint);}
+  #newHourStart, #newHourEnd{min-width:92px;}
+  .qa-arrow{color:var(--faint);font-size:13px;}
+
+  .daypicker{
+    display:flex;
+    gap:5px;
+  }
+  .daypicker button{
+    width:32px;height:32px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--bg);
+    color:var(--sub);
+    font-size:11.5px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:'Inter';
+    transition:all .1s;
+  }
+  .daypicker button:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .daypicker button.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+
+  .qa-hint{
+    font-size:11.5px;
+    color:var(--faint);
+    margin:12px 2px 0;
+  }
+
+  .tray{
+    background:var(--card);
+    border:1px dashed var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:22px;
+    min-height:60px;
+    transition:background .15s, border-color .15s;
+  }
+  .tray.dragover{background:var(--accent-l);border-color:var(--accent);border-style:solid;}
+  .tray-label{
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--faint);
+    font-weight:700;
+    display:block;
+    margin-bottom:9px;
+  }
+  .tray-cards{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    min-height:28px;
+  }
+  .tray-empty{
+    font-size:13px;
+    color:var(--faint);
+    padding:4px 2px;
+  }
+
+  .grid-wrap{
+    overflow-x:auto;
+    background:var(--card);
+    border:1px solid var(--line-soft);
+    border-radius:16px;
+    padding:0;
+    box-shadow:var(--shadow-card);
+  }
+  .banner-row{
+    display:grid;
+    grid-template-columns:54px repeat(7,minmax(122px,1fr));
+    min-width:900px;
+    border-bottom:1px solid var(--line-soft);
+    padding:7px 0;
+    row-gap:5px;
+  }
+  .banner-row:empty{display:none;padding:0;border-bottom:none;}
+  .banner-pill{
+    border-radius:999px;
+    background:var(--c-l,var(--accent1-l));
+    border-left:3px solid var(--c,var(--accent1));
+    font-size:11px;
+    font-weight:600;
+    line-height:1;
+    padding:5px 10px;
+    color:#20242b;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    margin:0 2px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:6px;
+  }
+  .banner-pill .x{
+    font-size:10px;
+    color:#8b93a0;
+    opacity:0;
+    cursor:pointer;
+    flex:none;
+  }
+  .banner-pill:hover .x{opacity:1;}
+  .banner-pill .x:hover{color:#c0392b;}
+  .grid{
+    display:grid;
+    grid-template-columns:54px repeat(7,minmax(122px,1fr));
+    min-width:900px;
+    position:relative;
+  }
+  .corner{border-bottom:1px solid var(--line-soft);grid-row:1;grid-column:1;}
+  .daycol-head{
+    text-align:center;
+    padding:14px 4px 13px;
+    border-bottom:1px solid var(--line-soft);
+    border-left:1px solid var(--line-soft);
+    grid-row:1;
+  }
+  .daycol-head .dname{
+    font-size:10.5px;
+    color:var(--faint);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-weight:700;
+  }
+  .daycol-head .dnum{
+    font-family:'Space Grotesk';
+    font-size:18px;
+    font-weight:600;
+    margin-top:3px;
+    color:var(--ink);
+  }
+  .daycol-head.istoday{background:var(--today-wash);}
+  .daycol-head.istoday .dnum{
+    color:#fff;
+    background:var(--now-line);
+    width:26px;height:26px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    margin:3px auto 0;
+    font-size:14px;
+  }
+
+  .hour-label{
+    font-size:10.5px;
+    color:var(--faint);
+    text-align:right;
+    padding:0 8px 0 0;
+    border-top:1px solid var(--line-soft);
+    white-space:nowrap;
+    grid-column:1;
+    transform:translateY(-6px);
+  }
+  .daycol{
+    position:relative;
+    border-left:1px solid var(--line-soft);
+    grid-column:auto;
+  }
+  .daycol.istoday{background:var(--today-wash);}
+  .hourline{
+    position:absolute;
+    left:0;right:0;
+    border-top:1px solid var(--line-soft);
+    pointer-events:none;
+  }
+  .daycol.dragover{background:var(--accent-l);}
+
+  .now-line{
+    position:absolute;
+    left:0;right:0;
+    height:0;
+    border-top:2px solid var(--now-line);
+    z-index:4;
+    pointer-events:none;
+  }
+  .now-line::before{
+    content:'';
+    position:absolute;
+    left:-4px;top:-4px;
+    width:8px;height:8px;
+    border-radius:50%;
+    background:var(--now-line);
+  }
+
+  .ev{
+    position:absolute;
+    left:3px;right:3px;
+    background:var(--c-l,var(--accent1-l));
+    border-left:3px solid var(--c,var(--accent1));
+    border-radius:8px;
+    padding:5px 8px;
+    font-size:12px;
+    font-weight:500;
+    line-height:1.3;
+    cursor:grab;
+    color:#20242b;
+    overflow:hidden;
+    z-index:2;
+    transition:box-shadow .1s;
+  }
+  .ev:hover{box-shadow:var(--shadow-pop);}
+  .ev .evtime{
+    display:block;
+    font-size:10px;
+    color:var(--sub);
+    font-weight:500;
+    margin-top:1px;
+    opacity:.85;
+  }
+  .ev:active{cursor:grabbing;}
+  .ev.dragging{opacity:.35;}
+  .ev .x{
+    position:absolute;
+    top:3px;right:4px;
+    font-size:11px;
+    color:#8b93a0;
+    opacity:0;
+    cursor:pointer;
+    line-height:1;
+    padding:3px;
+    border-radius:4px;
+  }
+  .ev:hover .x{opacity:1;}
+  .ev .x:hover{color:#fff;background:#c0392b;}
+  .resize-handle{
+    position:absolute;
+    left:0;right:0;bottom:0;
+    height:8px;
+    cursor:ns-resize;
+    opacity:0;
+    transition:opacity .12s;
+  }
+  .resize-handle::after{
+    content:'';
+    position:absolute;
+    left:50%;bottom:2px;
+    width:22px;height:3px;
+    transform:translateX(-50%);
+    border-radius:2px;
+    background:var(--c,var(--accent1));
+  }
+  .ev:hover .resize-handle{opacity:.65;}
+  .ev.resizing{z-index:5;box-shadow:var(--shadow-pop);}
+
+  .traycard{
+    background:var(--c-l,var(--accent1-l));
+    border-left:3px solid var(--c,var(--accent1));
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:12.5px;
+    font-weight:500;
+    line-height:1.3;
+    cursor:grab;
+    position:relative;
+    color:#20242b;
+    word-break:break-word;
+    max-width:220px;
+    transition:box-shadow .1s;
+  }
+  .traycard:hover{box-shadow:var(--shadow-pop);}
+  .traycard:active{cursor:grabbing;}
+  .traycard.dragging{opacity:.35;}
+  .traycard .x{
+    margin-left:7px;
+    font-size:11px;
+    color:#8b93a0;
+    opacity:0;
+    cursor:pointer;
+  }
+  .traycard:hover .x{opacity:1;}
+  .traycard .x:hover{color:#c0392b;}
+
+  .ev.settle, .traycard.settle{
+    animation:settle .32s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes settle{
+    0%{transform:scale(.85);}
+    60%{transform:scale(1.04);}
+    100%{transform:scale(1);}
+  }
+
+  @media (max-width:640px){
+    body{padding:22px 14px 56px;}
+    header{flex-direction:column;align-items:flex-start;}
+    .composer-top{flex-direction:column;}
+    #addBtn{width:100%;}
+    .composer-row{flex-direction:column;align-items:stretch;}
+    .segmented{align-self:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <h1>Settle</h1>
+        <p>Type it once. Drag it where it lives.</p>
+      </div>
+    </div>
+    <div class="weeknav">
+      <button id="prevWeek" aria-label="Previous week">‹</button>
+      <span id="weekLabel"></span>
+      <button id="nextWeek" aria-label="Next week">›</button>
+      <button id="todayBtn">Today</button>
+    </div>
+  </header>
+
+  <div class="composer">
+    <div class="composer-top">
+      <input id="newActivity" placeholder="Type an activity and hit enter…" autocomplete="off">
+      <button id="addBtn">Add to calendar</button>
+    </div>
+    <div class="composer-row">
+      <div class="segmented" id="modeSwitch">
+        <button type="button" data-mode="date" class="active">One date</button>
+        <button type="button" data-mode="days">Repeat this week</button>
+        <button type="button" data-mode="range">Spans days</button>
+      </div>
+
+      <div class="composer-field-group" id="dateField">
+        <input id="newDate" type="date">
+      </div>
+
+      <div class="composer-field-group" id="daysField" style="display:none;">
+        <div class="daypicker" id="dayPicker">
+          <button type="button" data-day="0">M</button>
+          <button type="button" data-day="1">T</button>
+          <button type="button" data-day="2">W</button>
+          <button type="button" data-day="3">T</button>
+          <button type="button" data-day="4">F</button>
+          <button type="button" data-day="5">S</button>
+          <button type="button" data-day="6">S</button>
+        </div>
+        <span class="qa-arrow">until</span>
+        <input id="repeatUntil" type="date" title="Repeat until this date (optional)">
+      </div>
+
+      <div class="composer-field-group" id="rangeField" style="display:none;">
+        <input id="rangeStart" type="date" title="Starts">
+        <span class="qa-arrow">→</span>
+        <input id="rangeEnd" type="date" title="Ends">
+      </div>
+
+      <div class="composer-field-group" id="timeField">
+        <select id="newHourStart"></select>
+        <span class="qa-arrow">→</span>
+        <select id="newHourEnd"></select>
+      </div>
+    </div>
+    <p class="qa-hint" id="qaHint">Leave the date and time blank to drop it in the unscheduled tray instead.</p>
+  </div>
+
+  <div class="tray" id="tray">
+    <span class="tray-label">Unscheduled</span>
+    <div class="tray-cards" id="trayCards"></div>
+  </div>
+
+  <div class="grid-wrap">
+    <div class="banner-row" id="bannerRow"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'settle-events';
+const START_HOUR = 7, END_HOUR = 22, BOUND_END = END_HOUR + 1;
+const ROW_HEIGHT = 52;
+const COLORS = [
+  ['--accent1','--accent1-l'],
+  ['--accent2','--accent2-l'],
+  ['--accent3','--accent3-l'],
+  ['--accent4','--accent4-l'],
+  ['--accent5','--accent5-l'],
+  ['--accent6','--accent6-l'],
+];
+
+/* ---- Optional cross-device sync ----
+   Fill these in once you've created a free Supabase project (see the setup guide).
+   Leave them blank and Settle just uses this browser's local storage, same as before. */
+const SUPABASE_URL = 'https://qrbvzpepypblkrntnngq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyYnZ6cGVweXBibGtybnRubmdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MzIyMTAsImV4cCI6MjEwNjMwODIxMH0.sh1qrj-_ItUg4EV5wOdubBF6jfc9Cm8hVhnSIabLhk0';
+
+function supabaseReady(){ return !!(SUPABASE_URL && SUPABASE_ANON_KEY); }
+
+function sbFetch(path, opts={}){
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      ...(opts.headers||{})
+    }
+  });
+}
+
+let events = [];
+let weekOffset = 0;
+let dragId = null;
+let addMode = 'date';
+let selectedDays = new Set();
+
+function uid(){ return 'e' + Date.now() + Math.random().toString(36).slice(2,7); }
+
+function pad(n){ return n.toString().padStart(2,'0'); }
+function dateKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+
+function getMonday(offset){
+  const d = new Date();
+  d.setDate(d.getDate() + offset*7);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function weekDates(offset){
+  const mon = getMonday(offset);
+  const arr = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(mon);
+    d.setDate(mon.getDate()+i);
+    arr.push(d);
+  }
+  return arr;
+}
+
+function fmtHour(h){
+  const hourInt = Math.floor(h);
+  const minutes = Math.round((h - hourInt) * 60);
+  const period = hourInt < 12 || hourInt === 24 ? 'AM' : 'PM';
+  let hh = hourInt % 12; if(hh===0) hh = 12;
+  const mm = minutes === 0 ? '' : ':' + pad(minutes);
+  return hh + mm + ' ' + period;
+}
+
+function fmtRange(startH, endH){
+  return `${fmtHour(startH)} – ${fmtHour(endH)}`;
+}
+
+async function loadEvents(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    events = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    events = [];
+  }
+  if(supabaseReady()){
+    try{
+      const res = await sbFetch('events?select=*');
+      if(res.ok){
+        const rows = await res.json();
+        events = rows.map(r=>({
+          id: r.id, text: r.text, date: r.date,
+          hour: r.hour, endHour: r.endhour,
+          rangeEnd: r.rangeend, groupId: r.groupid
+        }));
+      }
+    }catch(e){
+      console.error('could not reach Supabase, using local copy', e);
+    }
+  }
+  events.forEach(ev=>{
+    if(ev.date && !ev.rangeEnd && (ev.endHour === undefined || ev.endHour === null)){
+      ev.endHour = Math.min(BOUND_END, ev.hour + 1);
+    }
+  });
+}
+
+async function saveEvents(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  }catch(e){
+    console.error('local save failed', e);
+  }
+  if(!supabaseReady()) return;
+  try{
+    const existing = await sbFetch('events?select=id').then(r=>r.json());
+    const localIds = new Set(events.map(e=>e.id));
+    const toDelete = existing.map(r=>r.id).filter(id=>!localIds.has(id));
+    if(toDelete.length){
+      const list = toDelete.map(id=>`"${id}"`).join(',');
+      await sbFetch(`events?id=in.(${list})`, { method:'DELETE' });
+    }
+    if(events.length){
+      const rows = events.map(ev=>({
+        id: ev.id, text: ev.text, date: ev.date || null,
+        hour: ev.hour ?? null, endhour: ev.endHour ?? null,
+        rangeend: ev.rangeEnd || null, groupid: ev.groupId || null
+      }));
+      await sbFetch('events?on_conflict=id', {
+        method:'POST',
+        headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(rows)
+      });
+    }
+  }catch(e){
+    console.error('sync to Supabase failed, saved locally only', e);
+  }
+}
+
+function colorFor(ev){
+  if(!ev.colorIdx && ev.colorIdx !== 0){
+    ev.colorIdx = Math.abs(hashStr(ev.text + ev.id)) % COLORS.length;
+  }
+  return COLORS[ev.colorIdx];
+}
+function hashStr(s){
+  let h = 0;
+  for(let i=0;i<s.length;i++){ h = (h<<5) - h + s.charCodeAt(i); h |= 0; }
+  return h;
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function attachDrag(card, ev){
+  card.draggable = true;
+  card.addEventListener('dragstart', e=>{
+    dragId = ev.id;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  card.addEventListener('dragend', ()=>{
+    card.classList.remove('dragging');
+    dragId = null;
+  });
+}
+
+function makeTrayCard(ev, justSettled){
+  const card = document.createElement('div');
+  card.className = 'traycard' + (justSettled ? ' settle' : '');
+  card.dataset.id = ev.id;
+  const [c, cl] = colorFor(ev);
+  card.style.setProperty('--c', `var(${c})`);
+  card.style.setProperty('--c-l', `var(${cl})`);
+  card.innerHTML = `${escapeHtml(ev.text)}<span class="x" title="Remove">✕</span>`;
+  attachDrag(card, ev);
+  card.querySelector('.x').addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    events = events.filter(x=>x.id!==ev.id);
+    await saveEvents();
+    render();
+  });
+  return card;
+}
+
+function makeGridBlock(ev, lane, lanesTotal, justSettled){
+  const card = document.createElement('div');
+  card.className = 'ev' + (justSettled ? ' settle' : '');
+  card.dataset.id = ev.id;
+  const [c, cl] = colorFor(ev);
+  card.style.setProperty('--c', `var(${c})`);
+  card.style.setProperty('--c-l', `var(${cl})`);
+
+  const top = (ev.hour - START_HOUR) * ROW_HEIGHT;
+  const duration = Math.max(0.5, ev.endHour - ev.hour);
+  const height = duration * ROW_HEIGHT - 2;
+  card.style.top = top + 'px';
+  card.style.height = height + 'px';
+  const widthPct = 100 / lanesTotal;
+  card.style.left = `calc(${lane * widthPct}% + 3px)`;
+  card.style.width = `calc(${widthPct}% - 6px)`;
+  card.style.right = 'auto';
+
+  card.innerHTML = `${escapeHtml(ev.text)}<span class="evtime">${fmtRange(ev.hour, ev.endHour)}</span><span class="x" title="Remove">✕</span>`;
+  attachDrag(card, ev);
+  card.querySelector('.x').addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    events = events.filter(x=>x.id!==ev.id);
+    await saveEvents();
+    render();
+  });
+  attachResizeHandle(card, ev);
+  return card;
+}
+
+let resizeState = null;
+
+function attachResizeHandle(card, ev){
+  const handle = document.createElement('div');
+  handle.className = 'resize-handle';
+  handle.setAttribute('aria-hidden','true');
+  handle.draggable = false;
+  handle.addEventListener('dragstart', e=> e.preventDefault());
+  handle.addEventListener('mousedown', e=> e.stopPropagation());
+  handle.addEventListener('pointerdown', e=>{
+    e.stopPropagation();
+    e.preventDefault();
+    const col = card.parentElement;
+    if(!col) return;
+    resizeState = { id: ev.id, col };
+    card.classList.add('resizing');
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  });
+  card.appendChild(handle);
+}
+
+document.addEventListener('pointermove', e=>{
+  if(!resizeState) return;
+  const rect = resizeState.col.getBoundingClientRect();
+  const offsetY = e.clientY - rect.top;
+  let hourPoint = START_HOUR + offsetY / ROW_HEIGHT;
+  hourPoint = Math.round(hourPoint * 2) / 2;
+  const ev = events.find(x=>x.id===resizeState.id);
+  if(!ev) return;
+  const minEnd = ev.hour + 0.5;
+  ev.endHour = Math.max(minEnd, Math.min(BOUND_END, hourPoint));
+  const card = document.querySelector(`.ev[data-id="${ev.id}"]`);
+  if(card){
+    const duration = Math.max(0.5, ev.endHour - ev.hour);
+    card.style.height = (duration * ROW_HEIGHT - 2) + 'px';
+    const timeEl = card.querySelector('.evtime');
+    if(timeEl) timeEl.textContent = fmtRange(ev.hour, ev.endHour);
+  }
+});
+
+document.addEventListener('pointerup', async ()=>{
+  if(!resizeState) return;
+  resizeState = null;
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+  await saveEvents();
+  render();
+});
+
+function layoutLanes(dayEvents){
+  const sorted = [...dayEvents].sort((a,b)=> a.hour - b.hour || a.endHour - b.endHour);
+  const laneEnds = [];
+  sorted.forEach(ev=>{
+    let placed = false;
+    for(let i=0;i<laneEnds.length;i++){
+      if(laneEnds[i] <= ev.hour){ ev._lane = i; laneEnds[i] = ev.endHour; placed = true; break; }
+    }
+    if(!placed){ ev._lane = laneEnds.length; laneEnds.push(ev.endHour); }
+  });
+  const lanesTotal = Math.max(1, laneEnds.length);
+  sorted.forEach(ev=> ev._lanesTotal = lanesTotal);
+  return sorted;
+}
+
+let lastPlacedId = null;
+
+async function placeEvent(id, date, hour){
+  const ev = events.find(e=>e.id===id);
+  if(!ev) return;
+  const duration = (ev.date && ev.endHour !== undefined && ev.endHour !== null) ? Math.max(0.5, ev.endHour - ev.hour) : 1;
+  ev.date = date;
+  ev.hour = Math.min(hour, BOUND_END - 0.5);
+  ev.endHour = Math.min(BOUND_END, ev.hour + duration);
+  lastPlacedId = id;
+  await saveEvents();
+  render();
+}
+
+function render(){
+  renderHeader();
+  renderTray();
+  renderGrid();
+  renderBanners();
+}
+
+function renderHeader(){
+  const dates = weekDates(weekOffset);
+  const first = dates[0], last = dates[6];
+  const opts = {month:'short', day:'numeric'};
+  const label = `${first.toLocaleDateString(undefined,opts)} – ${last.toLocaleDateString(undefined,opts)}`;
+  document.getElementById('weekLabel').textContent = label;
+}
+
+function renderTray(){
+  const wrap = document.getElementById('trayCards');
+  wrap.innerHTML = '';
+  const unscheduled = events.filter(e=>!e.date);
+  if(unscheduled.length===0){
+    const p = document.createElement('div');
+    p.className = 'tray-empty';
+    p.textContent = 'Nothing loose right now — type something above.';
+    wrap.appendChild(p);
+    return;
+  }
+  unscheduled.forEach(ev=>{
+    wrap.appendChild(makeTrayCard(ev, false));
+  });
+}
+
+function hourFromClientY(clientY, colEl){
+  const rect = colEl.getBoundingClientRect();
+  const offsetY = clientY - rect.top;
+  let raw = START_HOUR + offsetY / ROW_HEIGHT;
+  raw = Math.round(raw * 2) / 2;
+  return Math.max(START_HOUR, Math.min(END_HOUR + 0.5, raw));
+}
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const numHours = END_HOUR - START_HOUR + 1;
+  grid.style.gridTemplateRows = `auto repeat(${numHours}, ${ROW_HEIGHT}px)`;
+  const dates = weekDates(weekOffset);
+  const now = new Date();
+  const todayKey = dateKey(now);
+
+  const corner = document.createElement('div');
+  corner.className = 'corner';
+  grid.appendChild(corner);
+
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  dates.forEach((d,i)=>{
+    const head = document.createElement('div');
+    const isToday = dateKey(d) === todayKey;
+    head.className = 'daycol-head' + (isToday ? ' istoday' : '');
+    head.style.gridColumn = (i+2);
+    head.innerHTML = `<div class="dname">${dayNames[i]}</div><div class="dnum">${d.getDate()}</div>`;
+    grid.appendChild(head);
+  });
+
+  for(let h=START_HOUR; h<=END_HOUR; h++){
+    const lbl = document.createElement('div');
+    lbl.className = 'hour-label';
+    lbl.style.gridRow = (h - START_HOUR + 2);
+    lbl.textContent = fmtHour(h);
+    grid.appendChild(lbl);
+  }
+
+  dates.forEach((d,i)=>{
+    const key = dateKey(d);
+    const isToday = key === todayKey;
+    const col = document.createElement('div');
+    col.className = 'daycol' + (isToday ? ' istoday' : '');
+    col.style.gridColumn = (i+2);
+    col.style.gridRow = `2 / span ${numHours}`;
+    col.dataset.date = key;
+
+    for(let h=START_HOUR+1; h<=END_HOUR; h++){
+      const line = document.createElement('div');
+      line.className = 'hourline';
+      line.style.top = ((h - START_HOUR) * ROW_HEIGHT) + 'px';
+      col.appendChild(line);
+    }
+
+    if(isToday){
+      const nowHour = now.getHours() + now.getMinutes()/60;
+      if(nowHour >= START_HOUR && nowHour <= END_HOUR + 1){
+        const nowLine = document.createElement('div');
+        nowLine.className = 'now-line';
+        nowLine.style.top = ((nowHour - START_HOUR) * ROW_HEIGHT) + 'px';
+        col.appendChild(nowLine);
+      }
+    }
+
+    col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('dragover'); });
+    col.addEventListener('dragleave', ()=> col.classList.remove('dragover'));
+    col.addEventListener('drop', async e=>{
+      e.preventDefault();
+      col.classList.remove('dragover');
+      if(dragId){
+        const hour = hourFromClientY(e.clientY, col);
+        await placeEvent(dragId, key, hour);
+      }
+    });
+
+    const dayEvents = layoutLanes(events.filter(ev=>ev.date===key && !ev.rangeEnd));
+    dayEvents.forEach(ev=>{
+      col.appendChild(makeGridBlock(ev, ev._lane, ev._lanesTotal, ev.id===lastPlacedId));
+    });
+
+    grid.appendChild(col);
+  });
+  lastPlacedId = null;
+}
+
+function parseKey(key){ return new Date(key + 'T00:00:00'); }
+function daysBetween(fromKey, toKey){
+  return Math.round((parseKey(toKey) - parseKey(fromKey)) / (24*60*60*1000));
+}
+
+function renderBanners(){
+  const bannerRow = document.getElementById('bannerRow');
+  bannerRow.innerHTML = '';
+  const dates = weekDates(weekOffset);
+  const weekStartKey = dateKey(dates[0]);
+  const weekEndKey = dateKey(dates[6]);
+
+  const spans = events
+    .filter(ev=>ev.rangeEnd)
+    .filter(ev=> ev.date <= weekEndKey && ev.rangeEnd >= weekStartKey)
+    .map(ev=>{
+      const startOffset = Math.max(0, daysBetween(weekStartKey, ev.date));
+      const endOffset = Math.min(6, daysBetween(weekStartKey, ev.rangeEnd));
+      return { ev, startOffset, endOffset };
+    })
+    .sort((a,b)=> a.startOffset - b.startOffset || a.endOffset - b.endOffset);
+
+  const laneEnds = [];
+  spans.forEach(s=>{
+    let placed = false;
+    for(let i=0;i<laneEnds.length;i++){
+      if(laneEnds[i] <= s.startOffset){ s.lane = i; laneEnds[i] = s.endOffset + 1; placed = true; break; }
+    }
+    if(!placed){ s.lane = laneEnds.length; laneEnds.push(s.endOffset + 1); }
+  });
+
+  spans.forEach(s=>{
+    const pill = document.createElement('div');
+    pill.className = 'banner-pill';
+    const [c, cl] = colorFor(s.ev);
+    pill.style.setProperty('--c', `var(${c})`);
+    pill.style.setProperty('--c-l', `var(${cl})`);
+    pill.style.gridColumn = `${s.startOffset + 2} / ${s.endOffset + 3}`;
+    pill.style.gridRow = s.lane + 1;
+    pill.innerHTML = `<span>${escapeHtml(s.ev.text)}</span><span class="x" title="Remove">✕</span>`;
+    pill.querySelector('.x').addEventListener('click', async ()=>{
+      events = events.filter(x=>x.id!==s.ev.id);
+      await saveEvents();
+      render();
+    });
+    bannerRow.appendChild(pill);
+  });
+}
+
+
+function setupTrayDrop(){
+  const tray = document.getElementById('tray');
+  tray.addEventListener('dragover', e=>{ e.preventDefault(); tray.classList.add('dragover'); });
+  tray.addEventListener('dragleave', ()=> tray.classList.remove('dragover'));
+  tray.addEventListener('drop', async e=>{
+    e.preventDefault();
+    tray.classList.remove('dragover');
+    if(dragId){
+      const ev = events.find(x=>x.id===dragId);
+      if(ev){ ev.date = null; ev.hour = null; ev.endHour = null; await saveEvents(); render(); }
+    }
+  });
+}
+
+function populateHourSelects(){
+  const startSel = document.getElementById('newHourStart');
+  const endSel = document.getElementById('newHourEnd');
+  startSel.innerHTML = '<option value="">Start</option>';
+  for(let h=START_HOUR; h<=END_HOUR; h++){
+    const opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = fmtHour(h);
+    startSel.appendChild(opt);
+  }
+  endSel.innerHTML = '<option value="">End</option>';
+  for(let h=START_HOUR+1; h<=BOUND_END; h++){
+    const opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = fmtHour(h);
+    endSel.appendChild(opt);
+  }
+}
+
+function setMode(mode){
+  addMode = mode;
+  document.querySelectorAll('#modeSwitch button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  document.getElementById('dateField').style.display = mode === 'date' ? 'flex' : 'none';
+  document.getElementById('daysField').style.display = mode === 'days' ? 'flex' : 'none';
+  document.getElementById('rangeField').style.display = mode === 'range' ? 'flex' : 'none';
+  document.getElementById('timeField').style.display = mode === 'range' ? 'none' : 'flex';
+  const hint = document.getElementById('qaHint');
+  if(mode === 'date'){
+    hint.textContent = 'Leave the date and time blank to drop it in the unscheduled tray instead.';
+  } else if(mode === 'days'){
+    hint.textContent = 'Pick one or more days and a time. Add an end date to repeat it weekly until then — otherwise it only repeats this week.';
+  } else {
+    hint.textContent = 'For something that runs for days, weeks, or months — it shows as a bar across the top of every week it touches.';
+  }
+}
+
+function setupModeSwitch(){
+  document.querySelectorAll('#modeSwitch button').forEach(btn=>{
+    btn.addEventListener('click', ()=> setMode(btn.dataset.mode));
+  });
+}
+
+function clearDayPicker(){
+  selectedDays.clear();
+  document.querySelectorAll('#dayPicker button').forEach(b=> b.classList.remove('active'));
+}
+
+function setupDayPicker(){
+  document.querySelectorAll('#dayPicker button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const day = parseInt(btn.dataset.day,10);
+      if(selectedDays.has(day)){ selectedDays.delete(day); btn.classList.remove('active'); }
+      else { selectedDays.add(day); btn.classList.add('active'); }
+    });
+  });
+}
+
+async function addActivity(){
+  const input = document.getElementById('newActivity');
+  const dateInput = document.getElementById('newDate');
+  const startSel = document.getElementById('newHourStart');
+  const endSel = document.getElementById('newHourEnd');
+  const repeatUntilInput = document.getElementById('repeatUntil');
+  const rangeStartInput = document.getElementById('rangeStart');
+  const rangeEndInput = document.getElementById('rangeEnd');
+  const text = input.value.trim();
+  if(!text) return;
+
+  const dateVal = dateInput.value || null;
+  const startVal = startSel.value !== '' ? parseInt(startSel.value,10) : null;
+  let endVal = endSel.value !== '' ? parseInt(endSel.value,10) : null;
+  if(startVal !== null && (endVal === null || endVal <= startVal)){
+    endVal = Math.min(BOUND_END, startVal + 1);
+  }
+
+  if(addMode === 'range'){
+    const rStart = rangeStartInput.value || null;
+    let rEnd = rangeEndInput.value || null;
+    if(rStart){
+      if(!rEnd || rEnd < rStart) rEnd = rStart;
+      const ev = { id: uid(), text, date: rStart, rangeEnd: rEnd, hour: null, endHour: null };
+      events.push(ev);
+      const weekMonday = getMonday(0);
+      weekOffset = Math.round((parseKey(rStart) - weekMonday) / (7*24*60*60*1000));
+    }
+  } else if(addMode === 'days' && selectedDays.size > 0){
+    const groupId = uid();
+    const hour = startVal !== null ? startVal : START_HOUR;
+    const endHour = startVal !== null ? endVal : START_HOUR + 1;
+    const seriesStart = getMonday(weekOffset);
+    const repeatUntilVal = repeatUntilInput.value || null;
+    let untilDate = null;
+    if(repeatUntilVal){
+      untilDate = new Date(repeatUntilVal + 'T23:59:59');
+    }
+    const MAX_WEEKS = 52;
+    let weekIndex = 0;
+    while(weekIndex < MAX_WEEKS){
+      const dates = weekDates(weekOffset + weekIndex);
+      if(untilDate && dates[0] > untilDate) break;
+      selectedDays.forEach(dayIdx=>{
+        const d = dates[dayIdx];
+        if(untilDate && d > untilDate) return;
+        events.push({ id: uid(), text, date: dateKey(d), hour, endHour, groupId });
+      });
+      if(!untilDate) break;
+      weekIndex++;
+    }
+    lastPlacedId = null;
+  } else if(addMode === 'date' && dateVal){
+    const ev = { id: uid(), text, date: dateVal,
+      hour: startVal !== null ? startVal : START_HOUR,
+      endHour: startVal !== null ? endVal : START_HOUR + 1 };
+    events.push(ev);
+    lastPlacedId = ev.id;
+    const weekMonday = getMonday(0);
+    const evDate = new Date(dateVal + 'T00:00:00');
+    weekOffset = Math.round((evDate - weekMonday) / (7*24*60*60*1000));
+  } else {
+    events.push({ id: uid(), text, date: null, hour: null, endHour: null });
+  }
+
+  input.value = '';
+  dateInput.value = '';
+  startSel.value = '';
+  endSel.value = '';
+  repeatUntilInput.value = '';
+  rangeStartInput.value = '';
+  rangeEndInput.value = '';
+  clearDayPicker();
+  await saveEvents();
+  render();
+  input.focus();
+}
+
+document.getElementById('addBtn').addEventListener('click', addActivity);
+document.getElementById('newActivity').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') addActivity();
+});
+populateHourSelects();
+setupModeSwitch();
+setupDayPicker();
+document.getElementById('prevWeek').addEventListener('click', ()=>{ weekOffset--; render(); });
+document.getElementById('nextWeek').addEventListener('click', ()=>{ weekOffset++; render(); });
+document.getElementById('todayBtn').addEventListener('click', ()=>{ weekOffset=0; render(); });
+
+setupTrayDrop();
+(async ()=>{
+  await loadEvents();
+  render();
+})();
+</script>
+</body>
+</html>
