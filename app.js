@@ -8,6 +8,9 @@ const COLORS = [
   ['#3d5a80','#e7edf5'], ['#477b58','#e5f0e7'], ['#a9671d','#fff0d9'],
   ['#806b9b','#eee8f5'], ['#b34e5a','#f8e7e9'], ['#338387','#e2f2f1']
 ];
+// Read the URL before Supabase clears it, so we know if the user arrived from a password-reset email.
+const urlHash = new URLSearchParams(window.location.hash.slice(1));
+const openedFromResetLink = urlHash.get('type') === 'recovery';
 const configured = SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('YOUR_') && SUPABASE_ANON_KEY.length > 20 && !SUPABASE_ANON_KEY.includes('YOUR_');
 const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }) : null;
 
@@ -39,20 +42,49 @@ function colorFor(occ) { const title=titleFor(occ); let hash=0; for(const c of t
 function showToast(message, isError=false) { const el=$('#appMessage'); el.textContent=message; el.classList.toggle('error',isError); el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),3800); }
 function setSync(text, error=false) { const el=$('#syncStatus'); el.textContent=text; el.style.color=error?'var(--red)':''; }
 function requireSupabase() { if (!supabase) { setSync('Setup required',true); showToast('Add your Supabase project URL and publishable/anon key to config.js first.',true); return false; } return true; }
-function setAuthMode(mode) { authMode=mode; $('#authHeading').textContent=mode==='signin'?'Welcome back':'Create your account'; $('#authDescription').textContent=mode==='signin'?'Sign in to access your calendar and tasks.':'Create an account to keep your tasks private and synced.'; $('#authSubmit').textContent=mode==='signin'?'Sign in':'Create account'; $('#authSwitchText').textContent=mode==='signin'?'New to Settle?':'Already have an account?'; $('#authSwitch').textContent=mode==='signin'?'Create an account':'Sign in'; $('#authPassword').autocomplete=mode==='signin'?'current-password':'new-password'; $('#authMessage').textContent=''; }
+// [heading, description, submit button, switch text, switch button, busy button text] for each login screen mode.
+const AUTH_TEXT = {
+  signin: ['Welcome back','Sign in to access your calendar and tasks.','Sign in','New to Settle?','Create an account','Signing in…'],
+  signup: ['Create your account','Create an account to keep your tasks private and synced.','Create account','Already have an account?','Sign in','Creating…'],
+  forgot: ['Reset your password',"Enter your account's email and we'll send you a link to choose a new password.",'Send reset link','Remembered it?','Back to sign in','Sending…'],
+  recovery: ['Choose a new password','Enter a new password for your Settle account.','Update password','','','Saving…']
+};
+function setAuthMode(mode) {
+  authMode=mode; const [heading,description,submit,switchText,switchButton]=AUTH_TEXT[mode];
+  $('#authHeading').textContent=heading; $('#authDescription').textContent=description; $('#authSubmit').textContent=submit; $('#authSwitchText').textContent=switchText; $('#authSwitch').textContent=switchButton;
+  const email=$('#authEmail'), password=$('#authPassword');
+  // Disabled fields are skipped by the browser's "required" check, so hidden fields don't block the form.
+  email.disabled=mode==='recovery'; email.closest('label').classList.toggle('hidden',mode==='recovery');
+  password.disabled=mode==='forgot'; password.closest('label').classList.toggle('hidden',mode==='forgot');
+  password.closest('label').firstChild.textContent=mode==='recovery'?'New password':'Password';
+  password.autocomplete=mode==='signin'?'current-password':'new-password';
+  $('#forgotLink').classList.toggle('hidden',mode!=='signin'); $('#authSwitch').parentElement.classList.toggle('hidden',mode==='recovery');
+  $('#authMessage').textContent='';
+}
 
 async function handleAuthSubmit(event) {
   event.preventDefault();
   if(!requireSupabase()) return;
   const email=$('#authEmail').value.trim(), password=$('#authPassword').value;
-  const button=$('#authSubmit'); button.disabled=true; button.textContent=authMode==='signin'?'Signing in…':'Creating…'; $('#authMessage').textContent='';
+  const button=$('#authSubmit'); button.disabled=true; button.textContent=AUTH_TEXT[authMode][5]; $('#authMessage').textContent='';
   try {
+    if(authMode==='forgot') {
+      const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+      if(error) throw error;
+      $('#authMessage').style.color='var(--green)'; $('#authMessage').textContent='If that email has a Settle account, a reset link is on its way. Check your inbox.'; return;
+    }
+    if(authMode==='recovery') {
+      const {error}=await supabase.auth.updateUser({password});
+      if(error) throw error;
+      session=(await supabase.auth.getSession()).data.session; $('#authPassword').value=''; setAuthMode('signin');
+      await enterApp(); showToast('Password updated. You are signed in.'); return;
+    }
     const result=authMode==='signin' ? await supabase.auth.signInWithPassword({email,password}) : await supabase.auth.signUp({email,password});
     if(result.error) throw result.error;
     if(authMode==='signup' && !result.data.session) { $('#authMessage').style.color='var(--green)'; $('#authMessage').textContent='Account created. Check your email to confirm your address, then sign in.'; return; }
     session=result.data.session; await enterApp();
   } catch(error) { $('#authMessage').style.color='var(--red)'; $('#authMessage').textContent=error.message || 'Could not sign in. Please try again.'; }
-  finally { button.disabled=false; button.textContent=authMode==='signin'?'Sign in':'Create account'; }
+  finally { button.disabled=false; button.textContent=AUTH_TEXT[authMode][2]; }
 }
 
 async function enterApp() {
@@ -252,6 +284,7 @@ function renderHistory() {
 
 $('#authForm').addEventListener('submit',handleAuthSubmit);
 $('#authSwitch').addEventListener('click',()=>setAuthMode(authMode==='signin'?'signup':'signin'));
+$('#forgotLink').addEventListener('click',()=>setAuthMode('forgot'));
 $('#signOutBtn').addEventListener('click',signOut);
 $('#newTaskTop').addEventListener('click',openComposer);$('#closeComposer').addEventListener('click',closeComposer);$('#cancelTask').addEventListener('click',closeComposer);$('#taskForm').addEventListener('submit',createTask);$('#taskRepeat').addEventListener('change',toggleRepeatFields);
 $$('.nav-item').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
@@ -260,6 +293,12 @@ fillTimeSelects();
 
 if(!configured) { setAuthMode('signin'); $('#authMessage').textContent='Setup needed: configure config.js with your Supabase URL and publishable/anon key.'; $('#authMessage').style.color='var(--amber)'; setSync('Setup required',true); }
 else {
-  supabase.auth.getSession().then(async({data,error})=>{if(error){showToast(error.message,true);return;}session=data.session;if(session)await enterApp();});
-  supabase.auth.onAuthStateChange((_event,newSession)=>{session=newSession;if(newSession&&$('#appShell').classList.contains('hidden'))enterApp();});
+  if(openedFromResetLink) setAuthMode('recovery');
+  else if(urlHash.get('error_description')) $('#authMessage').textContent=`${urlHash.get('error_description')}. Please request a new link.`;
+  supabase.auth.getSession().then(async({data,error})=>{if(error){showToast(error.message,true);return;}session=data.session;if(session&&authMode!=='recovery')await enterApp();});
+  supabase.auth.onAuthStateChange((event,newSession)=>{
+    session=newSession;
+    if(event==='PASSWORD_RECOVERY'){$('#appShell').classList.add('hidden');$('#authScreen').classList.remove('hidden');setAuthMode('recovery');return;}
+    if(newSession&&authMode!=='recovery'&&$('#appShell').classList.contains('hidden'))enterApp();
+  });
 }
