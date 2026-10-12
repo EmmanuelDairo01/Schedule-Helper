@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#3d5a80" />
+  <title>Settle — your time, in place</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="authScreen" class="auth-shell">
+    <section class="auth-card">
+      <div class="brand"><div class="brand-mark">S</div><div><h1>Settle</h1><p>Make room for what matters.</p></div></div>
+      <h2 id="authHeading">Welcome back</h2>
+      <p class="muted" id="authDescription">Sign in to access your calendar and tasks.</p>
+      <form id="authForm" class="stack">
+        <label>Email address<input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" required></label>
+        <label>Password<input id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="At least 6 characters" required></label>
+        <button id="authSubmit" class="primary wide" type="submit">Sign in</button>
+      </form>
+      <p class="auth-switch"><span id="authSwitchText">New to Settle?</span> <button id="authSwitch" class="link-button" type="button">Create an account</button></p>
+      <p id="authMessage" class="message" role="status"></p>
+      <p class="tiny muted">Your account and data are secured by Supabase authentication and row-level security.</p>
+    </section>
+  </div>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand side-brand"><div class="brand-mark">S</div><div><h1>Settle</h1><p>Plan with a little more ease.</p></div></div>
+      <div class="nav-label">WORKSPACE</div>
+      <button class="nav-item active" data-view="calendar"><span>▦</span> Calendar</button>
+      <button class="nav-item" data-view="board"><span>☷</span> Task board</button>
+      <button class="nav-item" data-view="history"><span>↺</span> Completion history</button>
+      <div class="sidebar-bottom"><div class="user-chip"><div class="avatar" id="userAvatar">S</div><div class="user-meta"><strong id="userEmail">Signed in</strong><span>Personal workspace</span></div></div><button id="signOutBtn" class="secondary wide">Sign out</button></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar"><div><p class="eyebrow" id="viewEyebrow">YOUR WEEK</p><h2 id="viewTitle">Calendar</h2></div><div class="topbar-actions"><span id="syncStatus" class="sync-status">Connecting…</span><button id="newTaskTop" class="primary">＋ New task</button></div></header>
+
+      <section id="taskComposer" class="panel composer hidden">
+        <div class="panel-heading"><div><h3>Create a task</h3><p class="muted">Add it to your board now, and schedule it whenever you're ready.</p></div><button id="closeComposer" class="icon-button" aria-label="Close">×</button></div>
+        <form id="taskForm" class="form-grid">
+          <label class="span-2">Task name<input id="taskTitle" maxlength="180" placeholder="e.g. Study for ENSE 352" required></label>
+          <label>First date<input id="taskDate" type="date"></label>
+          <label>Status<select id="taskStatus"><option value="todo">To Do</option><option value="in_progress">In Progress</option><option value="done">Done</option></select></label>
+          <label>Start time<select id="taskStart"></select></label>
+          <label>End time<select id="taskEnd"></select></label>
+          <label class="span-2">Repeat<select id="taskRepeat"><option value="none">Does not repeat</option><option value="weekly">Weekly on selected days</option></select></label>
+          <fieldset id="repeatDaysField" class="span-2 hidden"><legend>Repeat on</legend><div class="weekday-picker" id="repeatDays"><label><input type="checkbox" value="1"> Mon</label><label><input type="checkbox" value="2"> Tue</label><label><input type="checkbox" value="3"> Wed</label><label><input type="checkbox" value="4"> Thu</label><label><input type="checkbox" value="5"> Fri</label><label><input type="checkbox" value="6"> Sat</label><label><input type="checkbox" value="0"> Sun</label></div><label class="end-date-label">Repeat until (optional)<input id="repeatUntil" type="date"></label><p class="tiny muted">Future occurrences stay scheduled even if an earlier one becomes overdue.</p></fieldset>
+          <div class="form-actions span-2"><button id="cancelTask" class="secondary" type="button">Cancel</button><button class="primary" type="submit">Save task</button></div>
+        </form>
+      </section>
+
+      <section id="calendarView" class="view-section">
+        <div class="view-toolbar"><div class="week-navigation"><button id="prevWeek" class="icon-button" aria-label="Previous week">‹</button><strong id="weekLabel"></strong><button id="nextWeek" class="icon-button" aria-label="Next week">›</button><button id="todayBtn" class="secondary small">Today</button></div><p class="tiny muted">Drag a task to another day or time. Drag it back to Unscheduled to remove its date.</p></div>
+        <div class="unscheduled-zone" id="unscheduledZone"><div><strong>Unscheduled</strong><span class="muted tiny">Drop tasks here to remove their scheduled date.</span></div><div id="unscheduledCards" class="unscheduled-cards"></div></div>
+        <div class="calendar-scroll"><div id="calendarGrid" class="calendar-grid"></div></div>
+      </section>
+
+      <section id="boardView" class="view-section hidden">
+        <div class="view-toolbar"><p class="muted">Move cards between columns to update their status. Recurring tasks are tracked one occurrence at a time.</p></div>
+        <div class="kanban-board">
+          <section class="kanban-column" data-status="todo"><header><h3>To Do</h3><span class="count">0</span></header><div class="kanban-cards" data-drop-status="todo"></div></section>
+          <section class="kanban-column" data-status="in_progress"><header><h3>In Progress</h3><span class="count">0</span></header><div class="kanban-cards" data-drop-status="in_progress"></div></section>
+          <section class="kanban-column" data-status="done"><header><h3>Done</h3><span class="count">0</span></header><div class="kanban-cards" data-drop-status="done"></div></section>
+        </div>
+      </section>
+
+      <section id="historyView" class="view-section hidden">
+        <div class="view-toolbar"><p class="muted">A record of completed task occurrences. Completing one recurring task does not complete future occurrences.</p></div>
+        <div id="historyList" class="history-list"></div>
+      </section>
+      <div id="appMessage" class="app-message" role="status"></div>
+    </main>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
